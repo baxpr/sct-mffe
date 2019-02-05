@@ -13,7 +13,7 @@ From: ubuntu:16.04
 
 %post
   apt-get update
-  apt-get install -y wget unzip zip xvfb
+  apt-get install -y wget unzip zip bzip2 xvfb
 
   # Download and install Spinal Cord Toolbox
   wget -nv -P /opt https://github.com/neuropoly/spinalcordtoolbox/archive/v3.2.7.tar.gz
@@ -30,6 +30,9 @@ From: ubuntu:16.04
 
   # Create input/output directories for binding
   mkdir /INPUTS && mkdir /OUTPUTS
+
+%environment
+  SCT_PATH=/opt/spinalcordtoolbox-3.2.7
 
 %runscript
   bash "$@"
