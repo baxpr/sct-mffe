@@ -18,6 +18,7 @@ From: ubuntu:16.04
   # Download and install Spinal Cord Toolbox
   wget -nv -P /opt https://github.com/neuropoly/spinalcordtoolbox/archive/v3.2.7.tar.gz
   cd /opt
+  mv v3.2.7.tar.gz spinalcordtoolbox-3.2.7.tar.gz
   tar -zxf spinalcordtoolbox-3.2.7.tar.gz
   rm spinalcordtoolbox-3.2.7.tar.gz
   cd spinalcordtoolbox-3.2.7
