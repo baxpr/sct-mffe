@@ -32,7 +32,8 @@ From: ubuntu:16.04
   mkdir /INPUTS && mkdir /OUTPUTS
 
 %environment
-  SCT_PATH=/opt/spinalcordtoolbox-3.2.7
+  export SCT_PATH=/opt/spinalcordtoolbox-3.2.7
+  export PATH=${SCT_PATH}/bin:${PATH}
 
 %runscript
-  bash "$@"
+  sct_check_dependencies "$@"
