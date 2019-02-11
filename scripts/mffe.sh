@@ -12,7 +12,7 @@
 
 # Spinal cord
 #sct_propseg
-sct_deepseg_sc
+sct_deepseg_sc -i ../INPUTS/mffe.nii.gz -c t2 -ofolder OUTPUTS -qc OUTPUTS/qc_deepseg_sc
 
 # Gray matter
 #sct_segment_graymatter
