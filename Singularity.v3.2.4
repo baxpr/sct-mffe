@@ -1,0 +1,14 @@
+Bootstrap: docker
+From: neuropoly/sct:sct-3.2.4-ubuntu-18.04
+
+%post
+  # Create input/output directories for binding
+  mkdir /INPUTS && mkdir /OUTPUTS
+  
+%environment
+  export SCT_PATH=/home/sct/sct_3.2.4
+  export PATH=${SCT_PATH}/bin:${PATH}
+
+%runscript
+  sct_check_dependencies "$@"
+  
