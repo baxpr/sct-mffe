@@ -38,6 +38,10 @@ sct_create_mask -i ../INPUTS/mffe_e1.nii.gz -p centerline,mffe_e1_seg.nii.gz -si
 # Crop data for faster processing
 sct_crop_image -i ../INPUTS/mffe_e1.nii.gz -m mffe_e1_mask.nii.gz -o mffe_e1_crop.nii.gz
 
+# Auto-label vertebrae
+sct_label_vertebrae -i mffe_e1_crop.nii.gz -s mffe_e1_seg.nii.gz -c t2 -initcenter 4
+
+
 # Create label 4 at the mid-FOV, because we know the FOV is centered at C3-C4 disc.
 sct_label_utils -i mffe_e1_seg.nii.gz -create-seg -1,4 -o label_c3c4.nii.gz
 
