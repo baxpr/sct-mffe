@@ -1,0 +1,50 @@
+## Spinal Cord Toolbox Test Script ##
+
+## Step 1: change to correct directory and convert PAR/REC to nifti
+#move to image directory
+cd ~/Desktop/Research/Data/SpinalCordToolboxTesting
+
+# Make directory for niftis
+mkdir niftis
+
+# convert to nii using dcm2niix (will not work for B1 scans)
+~/Downloads/MRIcroGL/dcm2niix -f %f_%p -o /Users/lawlesrd/Desktop/Research/Data/SpinalCordToolboxTesting/niftis /Users/lawlesrd/Desktop/Research/Data/SpinalCordToolboxTesting
+
+# move to new dir and rename files
+cd niftis
+mv SpinalCordToolboxTesting_sWIPWIPmFFESENSE0.6.nii Ref.nii
+mv SpinalCordToolboxTesting_WIPPulseMT_16_dyn.nii MT.nii
+
+## Step 2: Segment reference and register to PAM50 atlas 
+#generate centerline for cropping
+sct_get_centerline -i Ref.nii -c t2
+
+#create mask (might want to adjust size)
+sct_create_mask -i Ref.nii -p centerline,Ref_centerline_optic.nii -size 45mm
+
+#crop for faster processing
+sct_crop_image -i Ref.nii -m mask_Ref.nii -o Ref_crop.nii
+
+#segment cropped spinal cord (try deepseg_sc if this fails)
+# -CSF adds CSF segmentation
+# -cross outputs cross sectional area for each slice
+sct_propseg -i Ref_crop.nii -c t2 -CSF -cross
+
+#segment gray matter
+sct_deepseg_gm -i Ref_crop.nii
+
+# Subtract GM segmentation from cord segmentation to obtain WM segmentation
+sct_maths -i Ref_crop_seg.nii -sub Ref_crop_gmseg.nii -o Ref_crop_wmseg.nii
+
+#label vertebrae (add -initc2 for manual labeling)
+sct_label_vertebrae -i MT_0000_crop.nii.gz -s MT_0000_crop_seg.nii.gz -c t2
+
+#create labels at C2/C4 mid vertebral levels (might want to mess around with which vertebrae you label)
+sct_label_utils -i Ref_crop_seg_labeled.nii -vert-body 2,4 -o labels_vert.nii.gz
+
+#register to template
+sct_register_to_template -i MT_0000_crop.nii.gz -s MT_0000_crop_seg.nii.gz -l labels_vert.nii.gz -c t2
+
+#warp template objects
+sct_warp_template -d Ref_crop.nii -w warp_template2anat.nii.gz 
+
