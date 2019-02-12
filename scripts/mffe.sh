@@ -50,6 +50,7 @@ sct_create_mask -i mffe.nii.gz -p centerline,mffe_seg.nii.gz -size 60mm -o mask.
 # Crop data for faster processing
 sct_crop_image -i mffe.nii.gz -m mask.nii.gz -o m_mffe.nii.gz
 sct_crop_image -i mffe_seg.nii.gz -m mask.nii.gz -o m_mffe_seg.nii.gz
+sct_crop_image -i mffe_seg_labeled_discs.nii.gz -m mask.nii.gz -o m_mffe_seg_labeled_discs.nii.gz
 sct_crop_image -i labels.nii.gz -m mask.nii.gz -o m_labels.nii.gz
 
 # Default registration to template
@@ -61,11 +62,19 @@ sct_crop_image -i labels.nii.gz -m mask.nii.gz -o m_labels.nii.gz
 #-ldisc mffe_seg_labeled_discs.nii.gz -c t2
 
 # Register, still poor.
+#sct_register_to_template -i m_mffe.nii.gz -s m_mffe_seg.nii.gz \
+#-l m_labels.nii.gz -c t2 \
+#-param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
+#step=1,type=seg,algo=centermass,metric=MeanSquares,iter=10,smooth=2:\
+#step=2,type=im,algo=bsplinesyn,metric=CC,iter=10,gradStep=0.2
+
+# ldisc instead of l, still poor.
 sct_register_to_template -i m_mffe.nii.gz -s m_mffe_seg.nii.gz \
--l m_labels.nii.gz -c t2 \
+-ldisc m_mffe_seg_labeled_discs.nii.gz -c t2 \
 -param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
-step=1,type=seg,algo=centermass,metric=MeanSquares,smooth=2:\
-step=2,type=im,algo=bsplinesyn,metric=MI,iter=5,gradStep=0.5
+step=1,type=seg,algo=centermass,metric=MeanSquares,iter=10,smooth=2:\
+step=2,type=im,algo=bsplinesyn,metric=CC,iter=10,gradStep=0.2
+
 
 # Warp template
 #sct_warp_template -d m_mffe.nii.gz -w warp_template2anat.nii.gz
