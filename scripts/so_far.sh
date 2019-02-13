@@ -9,7 +9,7 @@
 #   mffe_seg                   Cord mask
 #   mffe_gmseg                 Gray matter mask
 #   mffe_wmseg                 White matter mask
-#   warp_curve2straight        Warp from mFFE to straightened version
+#   warp_curve2straight        Warp from mFFE to straightened, from label step
 #   warp_straight2curve        Reverse of above
 #   straight_ref               Straightened mFFE
 #   mffe_seg_labeled           Vertebral body label points
@@ -58,3 +58,15 @@ sct_register_multimodal \
 -param step=1,type=seg,algo=centermass,metric=MeanSquares,smooth=2:\
 step=2,type=im,algo=slicereg,metric=MI
 
+
+# To try:
+
+# Create straightened label map
+
+# Register straightened mFFE to template
+#sct_register_multimodal \
+#-i straight_ref.nii.gz -iseg straight_seg.nii.gz \
+#-d PAM50_t2s.nii.gz -dseg PAM50_t2s_seg.nii.gz \
+#-m mffe_mask30.nii.gz \
+#-param step=1,type=seg,algo=centermass,metric=MeanSquares,smooth=2:\
+#step=2,type=im,algo=slicereg,metric=MI
