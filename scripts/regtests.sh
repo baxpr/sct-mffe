@@ -25,10 +25,20 @@ rm tmp.nii.gz
 # Other files in tmp dir with -r 0
 sct_label_vertebrae -i mffe.nii.gz -s mffe_seg.nii.gz -c t2 -initcenter 3 -r 0
 
+# We may be able to use sct_straighten_spinalcord directly or in addition to get
+# image and labels in straightened space
 
 # Register label+seg+im to template
-
-
+#   Label step: use Tz_Sz (probably) or consider Tx_Ty_Tz_Sz
+#   Seg step: use translation, rigid, or affine
+#   Im step: use affine or syn
+#
+# Try:
+#   mask on destination image (template) with -m
+#   crop source image e.g. 50mm around centerline (for speed)
+#   shrink factor in first Im step (for speed)
+#   smooth in first Im step (for accuracy)
+#   smaller mask for final Im step to just get cord/CSF
 
 exit 0
 
