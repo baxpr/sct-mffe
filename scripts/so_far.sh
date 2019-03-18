@@ -38,6 +38,9 @@ rm tmp.nii.gz
 # Auto-label vertebrae. The C3/C4 disc is at FOV center in this case. We should 
 # expose this option (initcenter or initz) in general e.g.
 #  sct_label_vertebrae -i t2.nii.gz -s t2_seg_manual.nii.gz "$(< init_label_vertebrae.txt)"
+# It is possible to Manage Files in XNAT GUI and add a suitable file as a 
+# scan resource, but it's two-step process (Add Folder, Upload File)
+# Maybe write a script to find scans with missing level file and upload?
 sct_label_vertebrae -i mffe.nii.gz -s mffe_seg.nii.gz -c t2 -initcenter 3
 
 # Create mask for registration
