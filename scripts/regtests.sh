@@ -18,7 +18,7 @@ rm tmp.nii.gz
 # Label (includes straighten, sort of)
 #   mffe_seg_labeled_discs     disc points (subj space)
 #   mffe_seg_labeled           full labels (subj space)
-#   straight_ref               ??
+#   straight_ref               mffe in straight space
 #   warp_straight2curve        straight to subj
 #   warp_curve2straight        subj to straight
 #   straightening.cache        ??
@@ -29,7 +29,7 @@ sct_label_vertebrae -i mffe.nii.gz -s mffe_seg.nii.gz -c t2 -initcenter 3 -r 0
 # image and labels in straightened space
 
 # Register label+seg+im to template
-#   Label step: use Tz_Sz (probably) or consider Tx_Ty_Tz_Sz
+#   Label step: Tx_Ty_Tz_Sz is the min dof required
 #   Seg step: use translation, rigid, or affine
 #   Im step: use affine or syn
 #
@@ -40,15 +40,178 @@ sct_label_vertebrae -i mffe.nii.gz -s mffe_seg.nii.gz -c t2 -initcenter 3 -r 0
 #   smooth in first Im step (for accuracy)
 #   smaller mask for final Im step to just get cord/CSF
 
+# This works so far but isn't sufficient
+# ls = label, slicewise seg
+sct_register_multimodal \
+-i mffe.nii.gz \
+-iseg mffe_seg.nii.gz \
+-ilabel mffe_seg_labeled_discs.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz \
+-dseg ${TDIR}/PAM50_cord.nii.gz \
+-dlabel PAM50_label_disc_cropped.nii.gz \
+-o mffe_tem_ls.nii.gz \
+-owarp mffe_tem_ls_warp.nii.gz \
+-param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
+step=1,type=seg,algo=slicereg
+
+
+# la = label, affine seg
+# Worse, not usable. Doesn't straighten
+sct_register_multimodal \
+-i mffe.nii.gz \
+-iseg mffe_seg.nii.gz \
+-ilabel mffe_seg_labeled_discs.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz \
+-dseg ${TDIR}/PAM50_cord.nii.gz \
+-dlabel PAM50_label_disc_cropped.nii.gz \
+-o mffe_tem_la.nii.gz \
+-owarp mffe_tem_la_warp.nii.gz \
+-param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
+step=1,type=seg,algo=affine
+
+# lr = label, rigid seg
+# Also not usable, also doesn't straighten
+sct_register_multimodal \
+-i mffe.nii.gz \
+-iseg mffe_seg.nii.gz \
+-ilabel mffe_seg_labeled_discs.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz \
+-dseg ${TDIR}/PAM50_cord.nii.gz \
+-dlabel PAM50_label_disc_cropped.nii.gz \
+-o mffe_tem_lr.nii.gz \
+-owarp mffe_tem_lr_warp.nii.gz \
+-param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
+step=1,type=seg,algo=rigid
+
+
+# lsa = label, slicewise, affine seg
+# Very subtle differences from slicewise only (ls) and still poor reg
+# for the gray matter
+sct_register_multimodal \
+-i mffe.nii.gz \
+-iseg mffe_seg.nii.gz \
+-ilabel mffe_seg_labeled_discs.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz \
+-dseg ${TDIR}/PAM50_cord.nii.gz \
+-dlabel PAM50_label_disc_cropped.nii.gz \
+-o mffe_tem_lsa.nii.gz \
+-owarp mffe_tem_lsa_warp.nii.gz \
+-param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
+step=1,type=seg,algo=slicereg:\
+step=2,type=seg,algo=affine
+
+
+# lsi
+# No improvement
+sct_register_multimodal \
+-i mffe.nii.gz \
+-iseg mffe_seg.nii.gz \
+-ilabel mffe_seg_labeled_discs.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz \
+-dseg ${TDIR}/PAM50_cord.nii.gz \
+-dlabel PAM50_label_disc_cropped.nii.gz \
+-o mffe_tem_lsi.nii.gz \
+-owarp mffe_tem_lsi_warp.nii.gz \
+-param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
+step=1,type=seg,algo=slicereg:\
+step=2,type=im,algo=affine
+
+# lsisyn with mask
+# Fails, no output
+sct_register_multimodal \
+-i mffe.nii.gz \
+-iseg mffe_seg.nii.gz \
+-ilabel mffe_seg_labeled_discs.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz \
+-dseg ${TDIR}/PAM50_cord.nii.gz \
+-dlabel PAM50_label_disc_cropped.nii.gz \
+-o mffe_tem_lsisyn.nii.gz \
+-owarp mffe_tem_lsisyn_warp.nii.gz \
+-m mask.nii.gz \
+-param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
+step=1,type=seg,algo=slicereg:\
+step=2,type=im,algo=syn
+
+
+# next try two steps, ls, then im with -initwarp and tight mask
+# Perhaps a marginal improvement with affine?
+sct_create_mask \
+-i ${TDIR}/PAM50_cord.nii.gz \
+-p centerline,${TDIR}/PAM50_cord.nii.gz \
+-size 20mm \
+-o mask.nii.gz
+
+sct_register_multimodal \
+-i mffe.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz \
+-initwarp mffe_tem_ls_warp.nii.gz \
+-o mffe_tem_ls_mi.nii.gz \
+-owarp mffe_tem_ls_mi_warp.nii.gz \
+-m mask.nii.gz \
+-param step=1,type=im,algo=affine
+
+# try with syn
+# Might need this, seems some kind of process timer isn't working right:
+#   Note: you can opt out of Sentry reporting by editing the file 
+#   ${SCT_DIR}/bin/sct_launcher and delete the line starting with "export SENTRY_DSN"
+# Nope still failed. But failed step works when run directly in temp dir ????
+sct_register_multimodal \
+-i mffe.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz \
+-initwarp mffe_tem_ls_warp.nii.gz \
+-o mffe_tem_ls_ms.nii.gz \
+-owarp mffe_tem_ls_ms_warp.nii.gz \
+-m mask.nii.gz \
+-param step=1,type=im,algo=syn
+
+
+
+# sct_register_multimodal is not smart enough to handle non-identical label sets:
+# Exception: Error: number of source and destination landmarks are not the same,
+# so landmarks cannot be paired.
+# Solution would be to copy template label and remove ones we don't have in mffe
+
+
+# lk1 Kurt suggestion 1 plus labels
+# Too much warpiness, poor registration
+sct_register_multimodal \
+-i mffe.nii.gz -iseg mffe_seg.nii.gz \
+-ilabel mffe_seg_labeled_discs.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz -dseg ${TDIR}/PAM50_cord.nii.gz \
+-dlabel PAM50_label_disc_cropped.nii.gz \
+-o mffe_lk1.nii.gz \
+-owarp mffe_lk1_warp.nii.gz \
+-param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
+step=1,type=seg,algo=slicereg,metric=MeanSquares:\
+step=2,type=seg,algo=affine,metric=MeanSquares,gradStep=0.2:\
+step=3,type=im,algo=syn,metric=MI,iter=5,shrink=2
+
+
+# lkm1 Kurt + label + mask
+# Some parts good, some parts poor
+sct_register_multimodal \
+-i mffe.nii.gz -iseg mffe_seg.nii.gz \
+-ilabel mffe_seg_labeled_discs.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz -dseg ${TDIR}/PAM50_cord.nii.gz \
+-dlabel PAM50_label_disc_cropped.nii.gz \
+-o mffe_lkm1.nii.gz \
+-owarp mffe_lkm1_warp.nii.gz \
+-m mask.nii.gz \
+-param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
+step=1,type=seg,algo=slicereg,metric=MeanSquares:\
+step=2,type=seg,algo=affine,metric=MeanSquares,gradStep=0.2:\
+step=3,type=im,algo=syn,metric=MeanSquares,iter=5,shrink=2
+
+
 exit 0
 
 
-# Kurt suggestion 1
+# k1 Kurt suggestion 1
 sct_register_multimodal \
 -i mffe.nii.gz -iseg mffe_seg.nii.gz \
 -d ${TDIR}/PAM50_t2s.nii.gz -dseg {TDIR}/PAM50_t2s_seg.nii.gz \
--o mffe_tem.nii.gz \
--owarp mffe_tem_warp.nii.gz \
+-o mffe_k1.nii.gz \
+-owarp mffe_k1_warp.nii.gz \
 -param step=1,type=seg,algo=slicereg,metric=MeanSquares:\
 step=2,type=seg,algo=affine,metric=MeanSquares,gradStep=0.2:\
 step=3,type=im,algo=syn,metric=MI,iter=5,shrink=2
