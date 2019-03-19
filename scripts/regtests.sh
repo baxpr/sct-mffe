@@ -40,7 +40,16 @@ sct_label_vertebrae -i mffe.nii.gz -s mffe_seg.nii.gz -c t2 -initcenter 3 -r 0
 #   smooth in first Im step (for accuracy)
 #   smaller mask for final Im step to just get cord/CSF
 
-# This works so far but isn't sufficient
+# sct_register_multimodal is not smart enough to handle non-identical label sets:
+# Exception: Error: number of source and destination landmarks are not the same,
+# so landmarks cannot be paired.
+# Solution would be to copy template label and remove ones we don't have in mffe
+# cp ${TDIR}/PAM50_label_disc.nii.gz .
+# gunzip PAM50_label_disc.nii.gz
+# gunzip -k mffe_seg_labeled_discs.nii.gz
+# crop_template_labels.m
+
+# This works halfway well. Some 0.5-1mm errors in registration of GM, cord edges
 # ls = label, slicewise seg
 sct_register_multimodal \
 -i mffe.nii.gz \
@@ -48,11 +57,30 @@ sct_register_multimodal \
 -ilabel mffe_seg_labeled_discs.nii.gz \
 -d ${TDIR}/PAM50_t2s.nii.gz \
 -dseg ${TDIR}/PAM50_cord.nii.gz \
--dlabel PAM50_label_disc_cropped.nii.gz \
--o mffe_tem_ls.nii.gz \
--owarp mffe_tem_ls_warp.nii.gz \
+-dlabel PAM50_label_disc_cropped.nii \
+-o mffe_ls.nii.gz \
+-owarp mffe_ls_warp.nii.gz \
 -param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
-step=1,type=seg,algo=slicereg
+step=1,type=seg,algo=slicereg,poly=3
+
+# Bring along the label maps
+for map in mffe_seg mffe_gmseg mffe_wmseg mffe_seg_labeled ; do
+	sct_apply_transfo -x nn \
+	-i ${map}.nii.gz \
+	-d ${TDIR}/PAM50_t2s.nii.gz \
+	-w mffe_ls_warp.nii.gz \
+	-o ${map}_ls.nii.gz
+done
+
+
+
+# Can we get subject disc points warped to template space?
+# Problem: points are an entire huge slice thick (5mm). These really need to be
+# handled as discrete point coords rather than by resampling the image.
+
+
+exit 0
+
 
 
 # la = label, affine seg
@@ -166,10 +194,6 @@ sct_register_multimodal \
 
 
 
-# sct_register_multimodal is not smart enough to handle non-identical label sets:
-# Exception: Error: number of source and destination landmarks are not the same,
-# so landmarks cannot be paired.
-# Solution would be to copy template label and remove ones we don't have in mffe
 
 
 # lk1 Kurt suggestion 1 plus labels

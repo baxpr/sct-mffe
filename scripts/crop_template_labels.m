@@ -2,7 +2,7 @@
 Vsubj = spm_vol('../OUTPUTS/mffe_seg_labeled_discs.nii');
 Ysubj = spm_read_vols(Vsubj);
 
-Vtem = spm_vol('../sandbox/home/sct/sct_4.0.0-beta.0/data/PAM50/template/PAM50_label_disc.nii');
+Vtem = spm_vol('../OUTPUTS/PAM50_label_disc.nii');
 Ytem = spm_read_vols(Vtem);
 
 vals = unique(Ysubj);
