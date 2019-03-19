@@ -74,6 +74,8 @@ for map in mffe_seg mffe_gmseg mffe_wmseg mffe_seg_labeled ; do
 done
 
 
+# Could consider using GM/WM seg with affine instead of just cord seg
+
 
 # Can we get subject disc points warped to template space?
 # Problem: points are an entire huge slice thick (5mm). These really need to be
@@ -182,6 +184,7 @@ sct_create_mask \
 -size 20mm \
 -o mask.nii.gz
 
+# Takes 3 hours... but gives a little improvement
 sct_register_multimodal \
 -i mffe.nii.gz \
 -d ${TDIR}/PAM50_t2s.nii.gz \
@@ -190,6 +193,7 @@ sct_register_multimodal \
 -owarp mffe_lsm_warp.nii.gz \
 -m mask.nii.gz \
 -param step=1,type=im,algo=affine,metric=CC
+
 
 # Bring along the label maps
 for map in mffe_seg mffe_gmseg mffe_wmseg mffe_seg_labeled ; do
