@@ -50,6 +50,7 @@ sct_label_vertebrae -i mffe.nii.gz -s mffe_seg.nii.gz -c t2 -initcenter 3 -r 0
 # crop_template_labels.m
 
 # This works halfway well. Some 0.5-1mm errors in registration of GM, cord edges
+# Can we add in-plane rotation? E.g. image based with aggressive mask
 # ls = label, slicewise seg
 sct_register_multimodal \
 -i mffe.nii.gz \
@@ -80,6 +81,18 @@ done
 
 
 exit 0
+
+
+# Expand the template centerline to show dividing GM
+sct_maths \
+-i ${TDIR}/PAM50_centerline.nii.gz \
+-dilate 50,0,0 \
+-o PAM50_centerline_plusX.nii.gz
+
+sct_maths \
+-i ${TDIR}/PAM50_centerline.nii.gz \
+-dilate 0,50,0 \
+-o PAM50_centerline_plusY.nii.gz
 
 
 
@@ -172,11 +185,21 @@ sct_create_mask \
 sct_register_multimodal \
 -i mffe.nii.gz \
 -d ${TDIR}/PAM50_t2s.nii.gz \
--initwarp mffe_tem_ls_warp.nii.gz \
--o mffe_tem_ls_mi.nii.gz \
--owarp mffe_tem_ls_mi_warp.nii.gz \
+-initwarp mffe_ls_warp.nii.gz \
+-o mffe_lsm.nii.gz \
+-owarp mffe_lsm_warp.nii.gz \
 -m mask.nii.gz \
--param step=1,type=im,algo=affine
+-param step=1,type=im,algo=affine,metric=CC
+
+# Bring along the label maps
+for map in mffe_seg mffe_gmseg mffe_wmseg mffe_seg_labeled ; do
+	sct_apply_transfo -x nn \
+	-i ${map}.nii.gz \
+	-d ${TDIR}/PAM50_t2s.nii.gz \
+	-w mffe_lsm_warp.nii.gz \
+	-o ${map}_lsm.nii.gz
+done
+
 
 # try with syn
 # Might need this, seems some kind of process timer isn't working right:
