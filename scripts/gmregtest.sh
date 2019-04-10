@@ -67,15 +67,41 @@ step=1,type=seg,algo=slicereg,poly=3:\
 step=2,type=im,algo=affine
 
 
+# Create GM+WM image and register that
+sct_maths -i mffe1_gmseg.nii.gz -add mffe1_seg.nii.gz -o mffe1_gw.nii.gz
+sct_maths -i ${TDIR}/PAM50_gm.nii.gz -add ${TDIR}/PAM50_cord.nii.gz -o PAM50_gw.nii.gz
+
+sct_register_multimodal \
+-i mffe1_gw.nii.gz \
+-iseg mffe1_seg.nii.gz \
+-ilabel mffe1_seg_labeled_discs.nii.gz \
+-d PAM50_gw.nii.gz \
+-dseg ${TDIR}/PAM50_cord.nii.gz \
+-dlabel PAM50_label_disc_cropped.nii \
+-o mffe1_gw_lss.nii.gz \
+-owarp mffe1_gw_lss_warp.nii.gz \
+-param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
+step=1,type=seg,algo=slicereg,poly=3:\
+step=2,type=im,algo=syn
+
+
+
 # Bring along image
 sct_apply_transfo -x spline \
 -i mffe1.nii.gz \
 -d ${TDIR}/PAM50_t2s.nii.gz \
 -w mffe1_gmseg_lss_warp.nii.gz \
--o mffe1_lss.nii.gz
+-o mffe1_warped_gmlss.nii.gz
 
 sct_apply_transfo -x spline \
 -i mffe1.nii.gz \
 -d ${TDIR}/PAM50_t2s.nii.gz \
 -w mffe1_gmseg_lsa_warp.nii.gz \
--o mffe1_lsa.nii.gz
+-o mffe1_warped_gmlsa.nii.gz
+
+sct_apply_transfo -x spline \
+-i mffe1.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz \
+-w mffe1_gw_lss_warp.nii.gz \
+-o mffe1_warped_gwlss.nii.gz
+
