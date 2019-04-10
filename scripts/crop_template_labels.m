@@ -1,5 +1,5 @@
 
-Vsubj = spm_vol('../OUTPUTS/mffe_seg_labeled_discs.nii');
+Vsubj = spm_vol('../OUTPUTS/mffe1_seg_labeled_discs.nii');
 Ysubj = spm_read_vols(Vsubj);
 
 Vtem = spm_vol('../OUTPUTS/PAM50_label_disc.nii');
