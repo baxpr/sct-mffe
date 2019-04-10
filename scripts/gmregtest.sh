@@ -68,6 +68,8 @@ step=2,type=im,algo=affine
 
 
 # Create GM+WM image and register that
+# Really not bad. Anats don't register that well but that's partly due to disagreement
+# between PAM t2s and PAM cord seg.
 sct_maths -i mffe1_gmseg.nii.gz -add mffe1_seg.nii.gz -o mffe1_gw.nii.gz
 sct_maths -i ${TDIR}/PAM50_gm.nii.gz -add ${TDIR}/PAM50_cord.nii.gz -o PAM50_gw.nii.gz
 
