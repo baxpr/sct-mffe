@@ -61,3 +61,11 @@ sct_apply_transfo -x spline \
 -w ${IMG}_gw_lss_warp.nii.gz \
 -o ${IMG}_warped_gwlss.nii.gz
 
+# Get a NN resampling of the GW image
+sct_apply_transfo -x nn \
+-i ${IMG}_gw.nii.gz \
+-d ${TDIR}/PAM50_t2s.nii.gz \
+-w ${IMG}_gw_lss_warp.nii.gz \
+-o ${IMG}_gw_lss_nn.nii.gz
+
+
