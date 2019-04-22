@@ -6,9 +6,31 @@
 #    Warp to atlas space
 #    ROI time series extraction
 
-# Eventually we need topup in our container so we can apply to these fmri
-
 cd ../OUTPUTS
 cp ../INPUTS/fmri.nii.gz .
 
+# Topup?
+
+# fMRI motion correction
 sct_fmri_moco -i fmri.nii.gz 
+
+# Find cord on mean fMRI to improve registration
+sct_deepseg_sc -i fmri_moco_mean.nii.gz -c t2s
+
+# Create mask for registration
+sct_create_mask -i mffe.nii.gz -p centerline,mffe_seg.nii.gz -size 30mm \
+-o mffe_mask30.nii.gz
+
+# Register mean fMRI to mFFE
+sct_register_multimodal \
+-i fmri_moco_mean.nii.gz -iseg fmri_moco_mean_seg.nii.gz \
+-d mffe.nii.gz -dseg mffe_seg.nii.gz \
+-m mffe_mask30.nii.gz \
+-param step=1,type=seg,algo=centermass,metric=MeanSquares,smooth=2:\
+step=2,type=im,algo=slicereg,metric=MI
+
+# Warp subject GM and WM to fMRI space (NN interp adequate?)
+
+# Warp template CSF to fMRI space via mFFE space (NN adequate?)
+
+# We want an fMRI QA
