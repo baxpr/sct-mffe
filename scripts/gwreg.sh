@@ -10,11 +10,11 @@ TDIR=/home/sct/sct_4.0.0-beta.0/data/PAM50/template
 sct_maths -i mffe1.nii.gz -add mffe2.nii.gz mffe3.nii.gz -o mffesum.nii.gz
 
 # Which image will we work on?
-IMG=mffe1
+MFFE=mffe1
 
 # Segment GM and WM
 #    gmseg   :  gray matter
-#    wmseg   :  gray matter
+#    wmseg   :  white matter
 #    seg     :  cord
 #    gw      :  synthetic T2 (GM=2, WM=1)
 do_seg () {
@@ -25,47 +25,59 @@ do_seg () {
 	rm tmp.nii.gz
 	sct_maths -i "${1}"_gmseg.nii.gz -add "${1}"_seg.nii.gz -o "${1}"_gw.nii.gz
 }
-do_seg ${IMG}
+do_seg ${MFFE}
 
 # Get vertebral labels
-sct_label_vertebrae -i ${IMG}.nii.gz -s ${IMG}_seg.nii.gz -c t2 -initcenter 3 -r 0
+sct_label_vertebrae -i ${MFFE}.nii.gz -s ${MFFE}_seg.nii.gz -c t2 -initcenter 3 -r 0
 
 # Crop template to relevant levels. sct_register_multimodal is not smart enough to 
 # handle non-identical label sets:
 cp ${TDIR}/PAM50_label_disc.nii.gz .
-python ../scripts/crop_template_labels.py ${IMG}_seg_labeled_discs.nii.gz ${TDIR}/PAM50_label_disc.nii.gz
-
+python ../scripts/crop_template_labels.py ${MFFE}_seg_labeled_discs.nii.gz ${TDIR}/PAM50_label_disc.nii.gz
 
 # Create synthetic T2 from template
 sct_maths -i ${TDIR}/PAM50_gm.nii.gz -add ${TDIR}/PAM50_cord.nii.gz -o PAM50_gw.nii.gz
 
-
+# Register to template
 sct_register_multimodal \
--i ${IMG}_gw.nii.gz \
--iseg ${IMG}_seg.nii.gz \
--ilabel ${IMG}_seg_labeled_discs.nii.gz \
+-i ${MFFE}_gw.nii.gz \
+-iseg ${MFFE}_seg.nii.gz \
+-ilabel ${MFFE}_seg_labeled_discs.nii.gz \
 -d PAM50_gw.nii.gz \
 -dseg ${TDIR}/PAM50_cord.nii.gz \
 -dlabel PAM50_label_disc_cropped.nii.gz \
--o ${IMG}_gw_lss.nii.gz \
--owarp ${IMG}_gw_lss_warp.nii.gz \
+-o ${MFFE}_gw_warped.nii.gz \
 -param step=0,type=label,dof=Tx_Ty_Tz_Sz:\
 step=1,type=seg,algo=slicereg,poly=3:\
 step=2,type=im,algo=syn
 
-
-# Bring along the original image
+# Warp the original image to template space
 sct_apply_transfo -x spline \
--i ${IMG}.nii.gz \
+-i ${MFFE}.nii.gz \
 -d ${TDIR}/PAM50_t2s.nii.gz \
--w ${IMG}_gw_lss_warp.nii.gz \
--o ${IMG}_warped_gwlss.nii.gz
+-w warp_${MFFE}_gw2PAM50_gw.nii.gz \
+-o ${MFFE}_warped.nii.gz
 
-# Get a NN resampling of the GW image
+# Get a NN resampling of the GW image in template space
 sct_apply_transfo -x nn \
--i ${IMG}_gw.nii.gz \
+-i ${MFFE}_gw.nii.gz \
 -d ${TDIR}/PAM50_t2s.nii.gz \
--w ${IMG}_gw_lss_warp.nii.gz \
--o ${IMG}_gw_lss_nn.nii.gz
+-w warp_${MFFE}_gw2PAM50_gw.nii.gz \
+-o ${MFFE}_gw_warped_nn.nii.gz
 
+
+# Get cross sectional area, etc. CSA can be summed within level but other
+# shape params are only per slice
+sct_process_segmentation \
+-i ${MFFE}_seg.nii.gz \
+-p csa \
+-vert 1:30 \
+-vertfile ${MFFE}_seg_labeled.nii.gz \
+-perlevel 1 \
+-o ${MFFE}_csa.csv
+
+sct_process_segmentation \
+-i ${MFFE}_seg.nii.gz \
+-p shape \
+-o ${MFFE}_shape.csv
 
