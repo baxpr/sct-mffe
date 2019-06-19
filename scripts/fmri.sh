@@ -9,23 +9,27 @@
 cd ../OUTPUTS
 cp ../INPUTS/fmri.nii.gz .
 
+# Which images will we work on?
+MFFE=mffe1
+FMRI=fmri
+
 # Topup?
 
 # fMRI motion correction
-sct_fmri_moco -i fmri.nii.gz 
+sct_fmri_moco -i ${FMRI}.nii.gz 
 
 # Find cord on mean fMRI to improve registration
-sct_deepseg_sc -i fmri_moco_mean.nii.gz -c t2s
+sct_deepseg_sc -i ${FMRI}_moco_mean.nii.gz -c t2s
 
 # Create mask for registration
-sct_create_mask -i mffe1.nii.gz -p centerline,mffe1_seg.nii.gz -size 30mm \
--o mffe1_mask30.nii.gz
+sct_create_mask -i ${MFFE}.nii.gz -p centerline,${MFFE}_seg.nii.gz -size 30mm \
+-o ${MFFE}_mask30.nii.gz
 
 # Register mean fMRI to mFFE
 sct_register_multimodal \
--i fmri_moco_mean.nii.gz -iseg fmri_moco_mean_seg.nii.gz \
--d mffe1.nii.gz -dseg mffe1_seg.nii.gz \
--m mffe1_mask30.nii.gz \
+-i ${FMRI}_moco_mean.nii.gz -iseg ${FMRI}_moco_mean_seg.nii.gz \
+-d ${MFFE}.nii.gz -dseg ${MFFE}_seg.nii.gz \
+-m ${MFFE}_mask30.nii.gz \
 -param step=1,type=seg,algo=centermass,metric=MeanSquares,smooth=2:\
 step=2,type=im,algo=slicereg,metric=MI
 
